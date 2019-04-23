@@ -1,0 +1,1 @@
+docker run -i -t -v /Users/webplatformestgames/Desktop/1/sa/safari_crawling:/sa -e ko_KR.UTF-8 -e PYTHONIOENCODING=utf_8 ubuntu-phantomjs:init /bin/bash
