@@ -31,17 +31,22 @@ def get_book_link_listBysearch_page(search, page):
 def book_table_contents(href):
     browser.get(href)
     result = set([])
-    table_contents = browser.find_elements_by_css_selector("ol.detail-toc li > a")
+    btc = browser
+    title = btc.find_element_by_css_selector("h1.t-title").text
+    isbn = btc.find_element_by_css_selector("div.t-isbn").text
+    print("title = "+title+ "  isbn = "+isbn)
+    table_contents = btc.find_elements_by_css_selector("ol.detail-toc li > a")
     for tc in table_contents:
         li = tc.get_attribute("href").split("#")[0]
-    
+        #print(tc.text)
         result.add(li)
     
     return result
 
 def get_book_content_html(href):
     browser.get(href)
-    return browser.find_element_by_css_selector("div.annotator-wrapper").get_attribute('innerHTML')
+    
+    return browser.find_element_by_css_selector("body").get_attribute('innerHTML')
 
 def db_save(data):
     cur = conn.cursor()
