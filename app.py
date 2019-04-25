@@ -45,8 +45,8 @@ def book_table_contents(href):
 
 def get_book_content_html(href):
     browser.get(href)
-    
     return browser.find_element_by_css_selector("body").get_attribute('innerHTML')
+    #return browser.find_element_by_css_selector("div.sbo-rt-content").get_attribute('innerHTML')
 
 def db_save(data):
     cur = conn.cursor()
