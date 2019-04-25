@@ -1,7 +1,9 @@
 from selenium import webdriver
+import sqlite3
 
 user = "wkzkfmxk23@gmail.com"
-password = "wnrdmffo12!"
+password = ""
+conn = sqlite3.connect("book.sqlite")
 
 browser = webdriver.PhantomJS()
 browser.implicitly_wait(2)
@@ -9,10 +11,10 @@ browser.implicitly_wait(2)
 def login(user, password):
     url_login = "https://learning.oreilly.com/accounts/login/"
     browser.get(url_login)
-
+    
     browser.find_element_by_id("id_email").send_keys(user)
     browser.find_element_by_id("id_password1").send_keys(password)
-
+    
     form = browser.find_element_by_css_selector("input#login[type=submit]")
     form.submit()
 
@@ -28,15 +30,24 @@ def get_book_link_listBysearch_page(search, page):
 
 def book_table_contents(href):
     browser.get(href)
-    result = []
+    result = set([])
     table_contents = browser.find_elements_by_css_selector("ol.detail-toc li > a")
     for tc in table_contents:
         li = tc.get_attribute("href").split("#")[0]
-        #if result.find(li) != 0:
-            result.append(li)
+    
+        result.add(li)
     
     return result
 
+def get_book_content_html(href):
+    browser.get(href)
+    return browser.find_element_by_css_selector("div.annotator-wrapper").get_attribute('innerHTML')
+
+def db_save(data):
+    cur = conn.cursor()
+    for dd in data:
+        cur.execute("insert into books(href, content) values(?, ?)", dd)
+    conn.commit()
 
 
 
@@ -46,5 +57,8 @@ book_link_list = get_book_link_listBysearch_page("", 0)
 
 for link in book_link_list:
     table_link = book_table_contents(link)
+    books_data = []
     for tl in table_link:
-        print(tl)
+        books_data.append((tl, get_book_content_html(tl)))
+    db_save(books_data)
+        
