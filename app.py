@@ -1,6 +1,14 @@
 from selenium import webdriver
 import sqlite3
 
+# 로그인, 책 목록 가져오기, 책정보 저장하기, 책 목차 가져오기, 책 내용 저장하기
+# 목차에서 같은 링크일 경우..., 목차 트리구조
+# 책 파싱 => md?
+# =====DB=====
+# book isbn, publisher, title, releaseDate
+# menu idx, isbn, href, title, parent
+# content idx, menu, content
+
 user = "wkzkfmxk23@gmail.com"
 password = ""
 conn = sqlite3.connect("book.sqlite")
@@ -28,25 +36,43 @@ def get_book_link_listBysearch_page(search, page):
         result.append(card.get_attribute('href'))
 
     return result
+# 책 페이지 리턴
+def get_book_page_html(href):
+    return browser.get(href)
 # 책 정보 리턴
+def get_book_info(page):
+    # div.review-report data-identifier:isbn data-title:title
+    # div.t-authors 저자
+    # div.t-publishers 출판사
+    # div.t-release-date 출판일
+    # div.title-description t-description sbo-reader-content 책 설명
+    result = [page.find_element_by_css_selector("div.t-isbn").text, page.find_element_by_css_selector("h1.t-title").text]
+    return result
+# 책 메뉴 리턴 리뉴얼
+def get_book_menu(page):
+    result = []
+    table_contents = page.find_elements_by_css_selector("ol.detail-toc li > a")
+    for tc in table_contents:
+        title = tc.text
+        link = tc.get_attribute("href").split("#")[0]
+        result.append((title, link))
+    return result
 # 책 메뉴 리턴
 def book_table_contents(href):
     browser.get(href)
     result = set([])
     btc = browser
-    #
-    title = btc.find_element_by_css_selector("h1.t-title").text
-    isbn = btc.find_element_by_css_selector("div.t-isbn").text
-    print("title = "+title+ "  isbn = "+isbn)
-    #
     table_contents = btc.find_elements_by_css_selector("ol.detail-toc li > a")
     for tc in table_contents:
-        li_text = tc.text
         li = tc.get_attribute("href").split("#")[0]
-        #print(tc.text)
         result.add(li)
     
     return result
+# 책 내용 설정
+def set_book_content(menu):
+    for m in menu:
+        m.content = get_book_content_html(m.link)
+    return menu
 # 책 내용 리턴
 def get_book_content_html(href):
     browser.get(href)
@@ -55,14 +81,13 @@ def get_book_content_html(href):
 # 책 DB 저장
 def db_book_save(data):
     cur  = conn.cursor()
-    cur.execute()
+    cur.execute("insert into book(isbn, title) values(?, ?)", data)
     conn.commit()
-
 # 책 내용 DB 저장
 def db_content_save(data):
     cur = conn.cursor()
-    for dd in data:
-        cur.execute("insert into books(href, content) values(?, ?)", dd)
+    for c in data:
+        cur.execute("insert into book_content(href, content) values(?, ?)", c)
     conn.commit()
 # 
 
@@ -72,10 +97,16 @@ login(user, password)
 
 book_link_list = get_book_link_listBysearch_page("", 0)
 
-for link in book_link_list:
-    table_link = book_table_contents(link)
-    books_data = []
-    for tl in table_link:
-        books_data.append((tl, get_book_content_html(tl)))
-    db_content_save(books_data)
+# for link in book_link_list:
+#     table_link = book_table_contents(link)
+#     books_data = []
+#     for tl in table_link:
+#         books_data.append((tl, get_book_content_html(tl)))
+#     db_content_save(books_data)
         
+for link in book_link_list:
+    book_html = get_book_page_html(link)
+    book_info = get_book_info(book_html)
+    book_menu = get_book_menu(book_html)
+
+    db_book_save(book_info)
